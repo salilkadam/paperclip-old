@@ -1,3 +1,4 @@
+import { notifyDeliveryWork, DELIVERY_QUEUES } from "./delivery-work-notifications.js";
 import { activeIssueInteractionCondition, historicalQuestionCondition } from "./issue-question-context.js";
 import {
   currentContinuationOrigins,
@@ -2828,6 +2829,7 @@ export function issueThreadInteractionService(
         return row;
       });
       if (!updated) throw interactionAlreadyResolvedError();
+      if (status === "accepted" || status === "rejected") notifyDeliveryWork(db, DELIVERY_QUEUES.connection);
       await touchIssue(db, issue.id);
       const interaction = hydrateInteraction(
         updated,
@@ -5034,6 +5036,7 @@ export function issueThreadInteractionService(
         return row;
       });
 
+      notifyDeliveryWork(db, DELIVERY_QUEUES.question);
       await touchIssue(db, issue.id);
       const answered = hydrateInteraction(updated);
       await emitInteractionResolvedTelemetry(db, answered);

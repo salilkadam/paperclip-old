@@ -1,3 +1,4 @@
+import { notifyDeliveryWork, DELIVERY_QUEUES } from "./delivery-work-notifications.js";
 import { composeConnectionInstructions } from "./connection-instructions.js";
 import { isInsufficientConnectionScope, INSUFFICIENT_CONNECTION_SCOPE_MESSAGE } from "./connection-permission-errors.js";
 import { boundedMcpToolName } from "./mcp-tool-names.js";
@@ -2608,6 +2609,7 @@ export function createToolGatewayService(
         interactionId: interaction.id,
       })
       .onConflictDoNothing();
+    notifyDeliveryWork(db, DELIVERY_QUEUES.toolAction);
 
     await writeToolCallEvent({
       invocationId: input.invocation.id,
