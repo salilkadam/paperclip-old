@@ -490,6 +490,7 @@ export async function createApp(
         traceId?: string;
         limit?: number;
         now?: Date;
+        signal?: AbortSignal;
       }): Promise<unknown>;
     };
     databaseBackupService?: InstanceDatabaseBackupService;
@@ -877,7 +878,6 @@ export async function createApp(
   // route prefixes, so this dependency does not change issue-route precedence.
   api.use(issueRoutes(db, opts.storageService, {
     chatRunRetries: chatChannels,
-    feedbackExportService: opts.feedbackExportService,
     pluginWorkerManager: workerManager,
     approveToolActionRequest: (input) => toolGateway.approveActionRequest(input),
     declineToolActionRequest: (input) => toolGateway.declineActionRequest(input),
@@ -1199,7 +1199,7 @@ export async function createApp(
   if (opts.feedbackExportService) {
     deliveryWork.register(DELIVERY_QUEUES.feedback, {
       retryMs: FEEDBACK_EXPORT_FLUSH_INTERVAL_MS,
-      run: () => opts.feedbackExportService!.flushPendingFeedbackTraces(),
+      run: (signal) => opts.feedbackExportService!.flushPendingFeedbackTraces({ signal }),
       hasPending: () => opts.feedbackExportService!.hasPendingFeedbackTraces(),
     });
   }
