@@ -7979,6 +7979,7 @@ export function heartbeatService(
     // Cancelled after the start lock is released: cancelRunInternal promotes the
     // agent's next queued run, which takes this same lock.
     const rejectedClaims: Array<{ run: typeof heartbeatRuns.$inferSelect; err: HttpError }> = [];
+    let cancellationReason: string | undefined;
 
     return withAgentStartLock(agentId, async () => {
       const agent = await getAgent(agentId);
@@ -7986,10 +7987,7 @@ export function heartbeatService(
       const invokability = await getAgentInvokability(agent);
       if (!invokability.invokable) {
         if (shouldCancelRunsForNonInvokableAgent(invokability)) {
-          await cancelActiveForAgentInternal(
-            agentId,
-            `Cancelled because the agent is not invokable: ${invokability.reason}`,
-          );
+          cancellationReason = `Cancelled because the agent is not invokable: ${invokability.reason}`;
         }
         return [];
       }
@@ -8128,7 +8126,10 @@ export function heartbeatService(
         });
       }
       return claimedRuns;
-    }).finally(() => cancelRejectedQueuedRuns(rejectedClaims));
+    }).finally(async () => {
+      if (cancellationReason) await cancelActiveForAgentInternal(agentId, cancellationReason);
+      await cancelRejectedQueuedRuns(rejectedClaims);
+    });
   }
 
   // Await every background heartbeat execution that is currently in flight. A
